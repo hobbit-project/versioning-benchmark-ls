@@ -19,13 +19,20 @@ import org.hobbit.core.data.usage.ResourceUsageInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Benchmark Controller class for Versioning Benchmark - Large-scale.
+ * 
+ * @author Vassilis Papakonstantinou (papv@ics.forth.gr)
+ *
+ */
+
 public class VersioningBenchmarkController extends AbstractBenchmarkController {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(VersioningBenchmarkController.class);
 
-	private static final String DATA_GENERATOR_CONTAINER_IMAGE = "git.project-hobbit.eu:4567/papv/versioningdatagenerator:2.2.1";
+	private static final String DATA_GENERATOR_CONTAINER_IMAGE = "git.project-hobbit.eu:4567/papv/versioningdatagenerator:ls";
 	private static final String TASK_GENERATOR_CONTAINER_IMAGE = "git.project-hobbit.eu:4567/papv/versioningtaskgenerator:2.2.1";
-	private static final String EVALUATION_MODULE_CONTAINER_IMAGE = "git.project-hobbit.eu:4567/papv/versioningevaluationmodule:2.2.1";
+	private static final String EVALUATION_MODULE_CONTAINER_IMAGE = "git.project-hobbit.eu:4567/papv/versioningevaluationmodule:ls";
 	
 	private static final String PREFIX = "http://w3id.org/hobbit/versioning-benchmark/vocab#";
 	
@@ -35,8 +42,9 @@ public class VersioningBenchmarkController extends AbstractBenchmarkController {
     
     private Semaphore versionSentMutex = new Semaphore(0);
     private Semaphore versionLoadedMutex = new Semaphore(0);
-        
-    private int numberOfDataGenerators;
+    
+    private int numberOfDataGenerators = 1;
+    private int numberOfTaskGenerators = 1;
     private int numOfVersions;
     private int loadedVersion = 0;
     private long prevLoadingStartedTime = 0;
@@ -55,14 +63,10 @@ public class VersioningBenchmarkController extends AbstractBenchmarkController {
         LOGGER.info("Initilalizing Benchmark Controller...");
         super.init();
                
-		numberOfDataGenerators = (Integer) getPropertyOrDefault(PREFIX + "hasNumberOfGenerators", 1);
-		int v0Size =  (Integer) getPropertyOrDefault(PREFIX + "v0SizeInTriples", 1000000);
-		int generatorSeed = (Integer) getPropertyOrDefault(PREFIX + "generatorSeed", 0);
-		numOfVersions =  (Integer) getPropertyOrDefault(PREFIX + "numberOfVersions", 12);
-		int insRatio = (Integer) getPropertyOrDefault(PREFIX + "versionInsertionRatio", 5);
-		int delRatio = (Integer) getPropertyOrDefault(PREFIX + "versionDeletionRatio", 3);
+		String v0Size =  (String) getPropertyOrDefault(PREFIX + "v0SizeInTriples", "1.000.000");
+		int numOfVersions =  Integer.parseInt((String) getPropertyOrDefault(PREFIX + "numberOfVersions", "10"));
 		String dataForm = (String) getPropertyOrDefault(PREFIX + "generatedDataForm", "ic");
-		String enabledQueries = (String) getPropertyOrDefault(PREFIX + "enableDisableQT", "QT1=1, QT2=1, QT3=1, QT4=1, QT5=1, QT6=1, QT7=1, QT8=1");
+		String enabledQueries = (String) getPropertyOrDefault(PREFIX + "enableDisableQT", "QT2=1, QT4=1, QT6=1, QT7=1, QT8=1");
 		
 		loadingTimes = new long[numOfVersions];
 		triplesToBeAdded = new AtomicIntegerArray(numOfVersions);
@@ -71,12 +75,8 @@ public class VersioningBenchmarkController extends AbstractBenchmarkController {
 		
 		// data generators environmental values
 		dataGenEnvVariables = new String[] {
-				VersioningConstants.NUMBER_OF_DATA_GENERATORS + "=" + numberOfDataGenerators,
-				VersioningConstants.DATA_GENERATOR_SEED + "=" + generatorSeed,
 				VersioningConstants.V0_SIZE_IN_TRIPLES + "=" + v0Size,
 				VersioningConstants.NUMBER_OF_VERSIONS + "=" + numOfVersions,
-				VersioningConstants.VERSION_INSERTION_RATIO + "=" + insRatio,
-				VersioningConstants.VERSION_DELETION_RATIO + "=" + delRatio,
 				VersioningConstants.SENT_DATA_FORM + "=" + dataForm,
 				VersioningConstants.ENABLED_QUERY_TYPES + "=" + enabledQueries
 		};
@@ -87,11 +87,8 @@ public class VersioningBenchmarkController extends AbstractBenchmarkController {
 				VersioningConstants.INITIAL_VERSION_INGESTION_SPEED + "=" + PREFIX + "initialVersionIngestionSpeed",
 				VersioningConstants.AVG_APPLIED_CHANGES_PS + "=" + PREFIX + "avgAppliedChangesPS",
 				VersioningConstants.STORAGE_COST + "=" + PREFIX + "storageCost",
-				VersioningConstants.QT_1_AVG_EXEC_TIME + "=" + PREFIX + "queryType1AvgExecTime",
 				VersioningConstants.QT_2_AVG_EXEC_TIME + "=" + PREFIX + "queryType2AvgExecTime",
-				VersioningConstants.QT_3_AVG_EXEC_TIME + "=" + PREFIX + "queryType3AvgExecTime",
 				VersioningConstants.QT_4_AVG_EXEC_TIME + "=" + PREFIX + "queryType4AvgExecTime",
-				VersioningConstants.QT_5_AVG_EXEC_TIME + "=" + PREFIX + "queryType5AvgExecTime",
 				VersioningConstants.QT_6_AVG_EXEC_TIME + "=" + PREFIX + "queryType6AvgExecTime",
 				VersioningConstants.QT_7_AVG_EXEC_TIME + "=" + PREFIX + "queryType7AvgExecTime",
 				VersioningConstants.QT_8_AVG_EXEC_TIME + "=" + PREFIX + "queryType8AvgExecTime",
@@ -108,7 +105,7 @@ public class VersioningBenchmarkController extends AbstractBenchmarkController {
 		LOGGER.info("Data Generators created successfully.");
 
 		// Create task generators
-		createTaskGenerators(TASK_GENERATOR_CONTAINER_IMAGE, 1, new String[] {} );
+		createTaskGenerators(TASK_GENERATOR_CONTAINER_IMAGE, numberOfTaskGenerators, new String[] {} );
 		LOGGER.info("Task Generators created successfully.");
 		
 		// Create evaluation storage
@@ -137,13 +134,29 @@ public class VersioningBenchmarkController extends AbstractBenchmarkController {
 			try {
 				if (defaultValue instanceof String) {
 					if(((String) defaultValue).equals("ic")) {
-						Properties serializationFormats = new Properties();
+						Properties props = new Properties();
 						try {
-							serializationFormats.load(ClassLoader.getSystemResource("data_forms.properties").openStream());
+							props.load(ClassLoader.getSystemResource("data_forms.properties").openStream());
 						} catch (IOException e) {
 							LOGGER.error("Exception while parsing available data forms.");
 						}
-						return (T) serializationFormats.getProperty(iterator.next().asResource().getLocalName());
+						return (T) props.getProperty(iterator.next().asResource().getLocalName());
+					} else if(((String) defaultValue).equals("1.000.000")) {
+						Properties props = new Properties();
+						try {
+							props.load(ClassLoader.getSystemResource("data_sizes.properties").openStream());
+						} catch (IOException e) {
+							LOGGER.error("Exception while parsing available data sizes.");
+						}
+						return (T) props.getProperty(iterator.next().asResource().getLocalName());
+					} else if(((String) defaultValue).equals("10")) {
+						Properties props = new Properties();
+						try {
+							props.load(ClassLoader.getSystemResource("data_versions.properties").openStream());
+						} catch (IOException e) {
+							LOGGER.error("Exception while parsing available number of versions.");
+						}
+						return (T) props.getProperty(iterator.next().asResource().getLocalName());
 					} else {
 						return (T) iterator.next().asLiteral().getString(); 
 					}
@@ -263,7 +276,7 @@ public class VersioningBenchmarkController extends AbstractBenchmarkController {
 
         // wait for the system to terminate
         LOGGER.info("Waiting for the system to terminate.");
-        waitForSystemToFinish(1000 * 60 * 25);
+        waitForSystemToFinish(1000 * 60 * 60 * 8); // 8 hours
         LOGGER.info("System terminated.");
     	
     	if (resUsageRequester != null) {
