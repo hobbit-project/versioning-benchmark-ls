@@ -64,7 +64,7 @@ public class VersioningBenchmarkController extends AbstractBenchmarkController {
         super.init();
                
 		String v0Size =  (String) getPropertyOrDefault(PREFIX + "v0SizeInTriples", "1.000.000");
-		int numOfVersions =  Integer.parseInt((String) getPropertyOrDefault(PREFIX + "numberOfVersions", "10"));
+		numOfVersions =  Integer.parseInt((String) getPropertyOrDefault(PREFIX + "numberOfVersions", "10"));
 		String dataForm = (String) getPropertyOrDefault(PREFIX + "generatedDataForm", "ic");
 		String enabledQueries = (String) getPropertyOrDefault(PREFIX + "enableDisableQT", "QT2=1, QT4=1, QT6=1, QT7=1, QT8=1");
 		
@@ -74,6 +74,7 @@ public class VersioningBenchmarkController extends AbstractBenchmarkController {
 		triplesToBeLoaded = new AtomicIntegerArray(numOfVersions);
 		
 		// data generators environmental values
+		
 		dataGenEnvVariables = new String[] {
 				VersioningConstants.V0_SIZE_IN_TRIPLES + "=" + v0Size,
 				VersioningConstants.NUMBER_OF_VERSIONS + "=" + numOfVersions,
