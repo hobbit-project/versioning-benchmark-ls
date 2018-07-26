@@ -2,7 +2,11 @@ package org.hobbit.benchmark.versioning.components;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
 import java.io.StringReader;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,8 +17,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.input.CharSequenceReader;
 import org.apache.commons.lang3.SerializationUtils;
+import org.apache.commons.net.ftp.FTPClient;
 import org.hobbit.benchmark.versioning.Task;
 import org.hobbit.benchmark.versioning.properties.VersioningConstants;
 import org.hobbit.benchmark.versioning.util.SystemAdapterConstants;
@@ -42,6 +52,7 @@ public class VersioningDataGenerator extends AbstractDataGenerator {
 	private String datasetPath = "/versioning/data";
 	private String resultsPath = "/versioning/results";
 	private String queriesPath = "/versioning/queries";
+	private String remoteDirectory;
 
 	private int[] triplesExpectedToBeAdded;
 	private int[] triplesExpectedToBeDeleted;
@@ -54,7 +65,7 @@ public class VersioningDataGenerator extends AbstractDataGenerator {
 	
 	private ArrayList<Task> tasks = new ArrayList<Task>();
 	private Semaphore versionLoadedFromSystemMutex = new Semaphore(0);
-		
+	
 	@Override
     public void init() throws Exception {
 		LOGGER.info("Initializing Data Generator '" + getGeneratorId() + "'");
@@ -62,6 +73,10 @@ public class VersioningDataGenerator extends AbstractDataGenerator {
 		
 		// Initialize data generation parameters through the environment variables given by user
 		initFromEnv();
+		
+		remoteDirectory = "https://hobbitdata.informatik.uni-leipzig.de/SPVB-LS/"
+				+ (v0TotalSizeInTriples == 1000000 ? "1M-" : v0TotalSizeInTriples == 5000000 ? "5M-" : v0TotalSizeInTriples == 10000000 ? "10M-" : "TEST_") 
+				+ numberOfVersions + "V";
 		
 		// get the enabled queries 
 		Pattern pattern = Pattern.compile("QT([1-8])=([0|1])[^\\w]*");
@@ -73,15 +88,13 @@ public class VersioningDataGenerator extends AbstractDataGenerator {
 		}
 		enabledQueryTypes.load(new StringReader(enabledQueryTypesParamProp));
 
-		// TODO: download dataset info: triples to be added/deleted/loaded per version
+		// initialize the appropriate tables with the triples that have to be added,
+		// deleted and loaded for each version.
 		getDatasetInfoFromFTP();
 		
 		// TODO: download dataset
 		getDatasetFromFTP();
 		
-		triplesExpectedToBeAdded = new int[numberOfVersions];
-		triplesExpectedToBeDeleted = new int[numberOfVersions];
-		triplesExpectedToBeLoaded = new int[numberOfVersions];
 
 		// if all query types are disabled skip this part
 		if(!allQueriesDisabled) {
@@ -103,7 +116,35 @@ public class VersioningDataGenerator extends AbstractDataGenerator {
 	}
 	
 	public void getDatasetInfoFromFTP() {
+		LOGGER.info("Initializing tables with the added, deleted and loaded triples per version...");
+		triplesExpectedToBeAdded = new int[numberOfVersions];
+		triplesExpectedToBeDeleted = new int[numberOfVersions];
+		triplesExpectedToBeLoaded = new int[numberOfVersions];
 		
+		String remoteFile = remoteDirectory + "/data/version_info.csv";
+		
+		LOGGER.info("Downloading file " + remoteFile);
+		try (InputStream inputStream = new URL (remoteFile).openStream()) {
+			byte[] buffer = IOUtils.toByteArray(inputStream);
+			try (
+				Reader reader = new CharSequenceReader(new String(buffer));
+				CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT
+						.withFirstRecordAsHeader()
+	                    .withIgnoreHeaderCase()
+	                    .withTrim());
+			) {
+				for (CSVRecord csvRecord : csvParser) {
+					int version = Integer.parseInt(csvRecord.get("VersionNumber"));
+					triplesExpectedToBeAdded[version] = Integer.parseInt(csvRecord.get("TriplesToBeAdded"));
+					triplesExpectedToBeDeleted[version] = Integer.parseInt(csvRecord.get("TriplesToBeDeleted"));
+					triplesExpectedToBeLoaded[version] = Integer.parseInt(csvRecord.get("TriplesToBeLoaded"));
+				}
+			} catch (IOException e) {
+				LOGGER.error("An error occured while reading \"version_info.csv\" file.", e);
+			} 
+		} catch (IOException e1) {
+			LOGGER.error("An error occured while streaming \"version_info.csv\" file from FTP.", e1);
+		} 
 	}
 	
 	public void getDatasetFromFTP() {
