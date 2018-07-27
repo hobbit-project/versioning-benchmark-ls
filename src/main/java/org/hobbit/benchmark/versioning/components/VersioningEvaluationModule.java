@@ -34,11 +34,8 @@ public class VersioningEvaluationModule extends AbstractEvaluationModule {
     private Property INITIAL_VERSION_INGESTION_SPEED = null;
     private Property AVG_APPLIED_CHANGES_PS = null;
     private Property STORAGE_COST = null;
-    private Property QT_1_AVG_EXEC_TIME = null;
     private Property QT_2_AVG_EXEC_TIME = null;
-    private Property QT_3_AVG_EXEC_TIME = null;
     private Property QT_4_AVG_EXEC_TIME = null;
-    private Property QT_5_AVG_EXEC_TIME = null;
     private Property QT_6_AVG_EXEC_TIME = null;
     private Property QT_7_AVG_EXEC_TIME = null;
     private Property QT_8_AVG_EXEC_TIME = null;
@@ -46,11 +43,8 @@ public class VersioningEvaluationModule extends AbstractEvaluationModule {
     private Property QUERIES_PER_SECOND = null;
     
     private IngestionStatistics is = new IngestionStatistics();
-    private QueryTypeStatistics qts1 = new QueryTypeStatistics(1);
     private QueryTypeStatistics qts2 = new QueryTypeStatistics(2);
-    private QueryTypeStatistics qts3 = new QueryTypeStatistics(3);
     private QueryTypeStatistics qts4 = new QueryTypeStatistics(4);
-    private QueryTypeStatistics qts5 = new QueryTypeStatistics(5);
     private QueryTypeStatistics qts6 = new QueryTypeStatistics(6);
     private QueryTypeStatistics qts7 = new QueryTypeStatistics(7);
     private QueryTypeStatistics qts8 = new QueryTypeStatistics(8);
@@ -86,11 +80,8 @@ public class VersioningEvaluationModule extends AbstractEvaluationModule {
         INITIAL_VERSION_INGESTION_SPEED = initFinalModelFromEnv(env, VersioningConstants.INITIAL_VERSION_INGESTION_SPEED);
         AVG_APPLIED_CHANGES_PS = initFinalModelFromEnv(env, VersioningConstants.AVG_APPLIED_CHANGES_PS);
         STORAGE_COST = initFinalModelFromEnv(env, VersioningConstants.STORAGE_COST);
-        QT_1_AVG_EXEC_TIME = initFinalModelFromEnv(env, VersioningConstants.QT_1_AVG_EXEC_TIME);        
         QT_2_AVG_EXEC_TIME = initFinalModelFromEnv(env, VersioningConstants.QT_2_AVG_EXEC_TIME);
-        QT_3_AVG_EXEC_TIME = initFinalModelFromEnv(env, VersioningConstants.QT_3_AVG_EXEC_TIME);
         QT_4_AVG_EXEC_TIME = initFinalModelFromEnv(env, VersioningConstants.QT_4_AVG_EXEC_TIME);
-        QT_5_AVG_EXEC_TIME = initFinalModelFromEnv(env, VersioningConstants.QT_5_AVG_EXEC_TIME);
         QT_6_AVG_EXEC_TIME = initFinalModelFromEnv(env, VersioningConstants.QT_6_AVG_EXEC_TIME);
         QT_7_AVG_EXEC_TIME = initFinalModelFromEnv(env, VersioningConstants.QT_7_AVG_EXEC_TIME);
         QT_8_AVG_EXEC_TIME = initFinalModelFromEnv(env, VersioningConstants.QT_8_AVG_EXEC_TIME);
@@ -143,13 +134,6 @@ public class VersioningEvaluationModule extends AbstractEvaluationModule {
 		boolean resultSetsEqual = (expected.size() == received.size() && expected.size() > 50000) ? expected.size() == received.size() : ResultSetCompare.equalsByValue(expected, received);
 		
 		switch (queryType) {
-			case 1:
-				if(resultSetsEqual) {
-					qts1.reportSuccess(responseReceivedTimestamp - taskSentTimestamp); 
-				} else {
-					qts1.reportFailure();
-				}
-				break;
 			case 2:	
 				if(resultSetsEqual) { 
 					qts2.reportSuccess(responseReceivedTimestamp - taskSentTimestamp); 
@@ -157,25 +141,11 @@ public class VersioningEvaluationModule extends AbstractEvaluationModule {
 					qts2.reportFailure();
 				}
 				break;
-			case 3:	
-				if(resultSetsEqual) {
-					qts3.reportSuccess(responseReceivedTimestamp - taskSentTimestamp); 
-				} else { 
-					qts3.reportFailure();
-				}
-				break;
 			case 4:	
 				if(resultSetsEqual) { 
 					qts4.reportSuccess(responseReceivedTimestamp - taskSentTimestamp); 
 				} else { 
 					qts4.reportFailure();
-				}
-				break;
-			case 5:	
-				if(resultSetsEqual) {  
-					qts5.reportSuccess(responseReceivedTimestamp - taskSentTimestamp); 
-				} else { 
-					qts5.reportFailure();
 				}
 				break;
 			case 6:				
@@ -204,11 +174,8 @@ public class VersioningEvaluationModule extends AbstractEvaluationModule {
 	}
 	
 	private void computeTotalFailures() {
-		queryFailures += qts1.getFailuresCount();
 		queryFailures += qts2.getFailuresCount();
-		queryFailures += qts3.getFailuresCount();
 		queryFailures += qts4.getFailuresCount();
-		queryFailures += qts5.getFailuresCount();
 		queryFailures += qts6.getFailuresCount();
 		queryFailures += qts7.getFailuresCount();
 		queryFailures += qts8.getFailuresCount();
@@ -216,21 +183,15 @@ public class VersioningEvaluationModule extends AbstractEvaluationModule {
 
 	private void computeQPS() {
 		float totalQueriesExecutionTime = 0;
-		totalQueriesExecutionTime += qts1.getTotalExecutionTimeMs();
 		totalQueriesExecutionTime += qts2.getTotalExecutionTimeMs();
-		totalQueriesExecutionTime += qts3.getTotalExecutionTimeMs();
 		totalQueriesExecutionTime += qts4.getTotalExecutionTimeMs();
-		totalQueriesExecutionTime += qts5.getTotalExecutionTimeMs();
 		totalQueriesExecutionTime += qts6.getTotalExecutionTimeMs();
 		totalQueriesExecutionTime += qts7.getTotalExecutionTimeMs();
 		totalQueriesExecutionTime += qts8.getTotalExecutionTimeMs();
 		
 		long totalQueriesCount = 0;
-		totalQueriesCount += qts1.getRunsCount();
 		totalQueriesCount += qts2.getRunsCount();
-		totalQueriesCount += qts3.getRunsCount();
 		totalQueriesCount += qts4.getRunsCount();
-		totalQueriesCount += qts5.getRunsCount();
 		totalQueriesCount += qts6.getRunsCount();
 		totalQueriesCount += qts7.getRunsCount();
 		totalQueriesCount += qts8.getRunsCount();
@@ -264,25 +225,13 @@ public class VersioningEvaluationModule extends AbstractEvaluationModule {
         finalModel.add(experimentResource, STORAGE_COST, storageCostLiteral);
         LOGGER.info("STORAGE_COST: " + storageCost);
         
-        Literal queryType1AvgExecTimeLiteral = finalModel.createTypedLiteral(qts1.getAvgExecutionTimeMs(), XSDDatatype.XSDfloat);
-        finalModel.add(experimentResource, QT_1_AVG_EXEC_TIME, queryType1AvgExecTimeLiteral);
-        LOGGER.info("QT_1_AVG_EXEC_TIME: " + qts1.getAvgExecutionTimeMs());
-        
         Literal queryType2AvgExecTimeLiteral = finalModel.createTypedLiteral(qts2.getAvgExecutionTimeMs(), XSDDatatype.XSDfloat);
         finalModel.add(experimentResource, QT_2_AVG_EXEC_TIME, queryType2AvgExecTimeLiteral);
         LOGGER.info("QT_2_AVG_EXEC_TIME: " + qts2.getAvgExecutionTimeMs());
 
-        Literal queryType3AvgExecTimeLiteral = finalModel.createTypedLiteral(qts3.getAvgExecutionTimeMs(), XSDDatatype.XSDfloat);
-        finalModel.add(experimentResource, QT_3_AVG_EXEC_TIME, queryType3AvgExecTimeLiteral);
-        LOGGER.info("QT_3_AVG_EXEC_TIME: " + qts3.getAvgExecutionTimeMs());
-
         Literal queryType4AvgExecTimeLiteral = finalModel.createTypedLiteral(qts4.getAvgExecutionTimeMs(), XSDDatatype.XSDfloat);
         finalModel.add(experimentResource, QT_4_AVG_EXEC_TIME, queryType4AvgExecTimeLiteral);
         LOGGER.info("QT_4_AVG_EXEC_TIME: " + qts4.getAvgExecutionTimeMs());
-        
-        Literal queryType5AvgExecTimeLiteral = finalModel.createTypedLiteral(qts5.getAvgExecutionTimeMs(), XSDDatatype.XSDfloat);
-        finalModel.add(experimentResource, QT_5_AVG_EXEC_TIME, queryType5AvgExecTimeLiteral);
-        LOGGER.info("QT_5_AVG_EXEC_TIME: " + qts5.getAvgExecutionTimeMs());
         
         Literal queryType6AvgExecTimeLiteral = finalModel.createTypedLiteral(qts6.getAvgExecutionTimeMs(), XSDDatatype.XSDfloat);
         finalModel.add(experimentResource, QT_6_AVG_EXEC_TIME, queryType6AvgExecTimeLiteral);
