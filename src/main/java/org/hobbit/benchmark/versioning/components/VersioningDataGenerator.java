@@ -98,14 +98,14 @@ public class VersioningDataGenerator extends AbstractDataGenerator {
 	}
 	
 	public void getDatasetInfoFromFTP() {
-		LOGGER.info("Initializing tables with the added, deleted and loaded triples per version...");
+		LOGGER.info("Getting dataset info...");
 		triplesExpectedToBeAdded = new int[numberOfVersions];
 		triplesExpectedToBeDeleted = new int[numberOfVersions];
 		triplesExpectedToBeLoaded = new int[numberOfVersions];
 		
 		String remoteFile = remoteDirectory + "/data/version_info.csv";
 		
-		LOGGER.info("Downloading file " + remoteFile);
+		LOGGER.info("Dataset info:");
 		try (InputStream inputStream = new URL (remoteFile).openStream()) {
 			byte[] buffer = IOUtils.toByteArray(inputStream);
 			try (
@@ -120,6 +120,11 @@ public class VersioningDataGenerator extends AbstractDataGenerator {
 					triplesExpectedToBeAdded[version] = Integer.parseInt(csvRecord.get("TriplesToBeAdded"));
 					triplesExpectedToBeDeleted[version] = Integer.parseInt(csvRecord.get("TriplesToBeDeleted"));
 					triplesExpectedToBeLoaded[version] = Integer.parseInt(csvRecord.get("TriplesToBeLoaded"));
+					LOGGER.info("Version " + version + 
+							"\tAdded: " + triplesExpectedToBeAdded[version] + 
+							"\tDeleted:" + triplesExpectedToBeDeleted[version] +
+							"\tTotal:" + triplesExpectedToBeLoaded[version]);
+
 				}
 			} catch (IOException e) {
 				LOGGER.error("An error occured while reading \"version_info.csv\" file.", e);
@@ -144,7 +149,7 @@ public class VersioningDataGenerator extends AbstractDataGenerator {
 			String graphUri = "http://datagen." + (files[i].contains("added") ? "addset" : "deleteset") + "." + version + "." + FilenameUtils.removeExtension(files[i]);
 			String remoteFile = versionRemoteDir + files[i];
 			LOGGER.info("Downloading file: " + files[i] + "...");
-			try (GZIPInputStream inputStream = (GZIPInputStream) new URL(remoteFile).openStream()) {
+			try (GZIPInputStream inputStream = new GZIPInputStream (new URL(remoteFile).openStream())) {
 				// de-compress file and send it to system adapter
 				LOGGER.info("Decompressing file " + files[i] + "...");
 				try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
@@ -194,13 +199,13 @@ public class VersioningDataGenerator extends AbstractDataGenerator {
 		// download the expected results
 		String resultsFile = FilenameUtils.removeExtension(queryFile) + "_results.json.gz";
 		String resultsFilePath = remoteDirectory + "/results/" + resultsFile;
-		try (GZIPInputStream gzipInputStream = (GZIPInputStream) new URL (resultsFilePath).openStream()) {
+		try (GZIPInputStream inputStream = new GZIPInputStream (new URL(resultsFilePath).openStream())) {
 			// de-compress file containing the expected results
 			LOGGER.info("Decompressing file " + resultsFile + "...");
 			try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
 				byte[] buffer = new byte[1024];
                 int len;
-                while((len = gzipInputStream.read(buffer)) != -1) {
+                while((len = inputStream.read(buffer)) != -1) {
                     out.write(buffer, 0, len);
                 }
                 task.setExpectedAnswers(out.toByteArray());
