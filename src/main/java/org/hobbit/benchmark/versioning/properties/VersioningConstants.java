@@ -11,6 +11,22 @@ public final class VersioningConstants {
 	
 	// =============== COMMAND QUEUE CONSTANTS ===============
 	
+	/**
+     * The signal sent by the benchmarked system to indicate that it
+     * has finished with a phase of bulk loading.
+     */
+	public static final byte  BULK_LOADING_DATA_FINISHED = (byte) 150;
+	
+	/**
+     * The signal sent by the benchmark controller to indicate that all
+     * data has successfully sent by the data generators
+     */
+    public static final byte  BULK_LOAD_DATA_GEN_FINISHED = (byte) 151;
+    
+    /**
+     * The signal sent by the data generator to indicate that all
+     * data has successfully sent to the system
+     */
 	public static final byte DATA_GEN_VERSION_DATA_SENT = (byte) 301;
 		
 	// =============== DATA GENERATOR CONSTANTS ===============

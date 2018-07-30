@@ -24,7 +24,6 @@ import org.apache.commons.io.input.CharSequenceReader;
 import org.apache.commons.lang3.SerializationUtils;
 import org.hobbit.benchmark.versioning.Task;
 import org.hobbit.benchmark.versioning.properties.VersioningConstants;
-import org.hobbit.benchmark.versioning.util.SystemAdapterConstants;
 import org.hobbit.core.components.AbstractDataGenerator;
 import org.hobbit.core.rabbit.RabbitMQUtils;
 import org.slf4j.Logger;
@@ -361,7 +360,7 @@ public class VersioningDataGenerator extends AbstractDataGenerator {
 	
 	@Override
     public void receiveCommand(byte command, byte[] data) {
-        if (command == SystemAdapterConstants.BULK_LOADING_DATA_FINISHED) {
+        if (command == VersioningConstants.BULK_LOADING_DATA_FINISHED) {
         	versionLoadedFromSystemMutex.release();
         }
         super.receiveCommand(command, data);

@@ -10,7 +10,6 @@ import java.util.concurrent.atomic.AtomicIntegerArray;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.jena.rdf.model.NodeIterator;
 import org.hobbit.benchmark.versioning.properties.VersioningConstants;
-import org.hobbit.benchmark.versioning.util.SystemAdapterConstants;
 import org.hobbit.core.Commands;
 import org.hobbit.core.Constants;
 import org.hobbit.core.components.AbstractBenchmarkController;
@@ -196,7 +195,7 @@ public class VersioningBenchmarkController extends AbstractBenchmarkController {
         	// signal sent from data generator that all its data generated successfully
         	LOGGER.info("Recieved signal from Data Generator " + dataGeneratorId + " that all data (#" + dataGenNumOfMessages + ") of version " + loadedVersion + " successfully sent to the system.");
         	versionSentMutex.release();
-	    } else if (command == SystemAdapterConstants.BULK_LOADING_DATA_FINISHED) {
+	    } else if (command == VersioningConstants.BULK_LOADING_DATA_FINISHED) {
             // signal sent from the system that a version loaded successfully
 	    	LOGGER.info("Recieved signal that all data of version " + loadedVersion + " successfully loaded by the system.");
         	long currTimeMillis = System.currentTimeMillis();
@@ -247,7 +246,7 @@ public class VersioningBenchmarkController extends AbstractBenchmarkController {
 	        buffer.putInt(numberOfMessages.get());
 	        buffer.put(v == numOfVersions - 1 ? (byte) 1 : (byte) 0);
 	        prevLoadingStartedTime = System.currentTimeMillis();
-	        sendToCmdQueue(SystemAdapterConstants.BULK_LOAD_DATA_GEN_FINISHED, buffer.array());
+	        sendToCmdQueue(VersioningConstants.BULK_LOAD_DATA_GEN_FINISHED, buffer.array());
 	        numberOfMessages.set(0);
 	        LOGGER.info("Waiting for the system to load data of version " + v);
 			versionLoadedMutex.acquire();
