@@ -131,7 +131,16 @@ public class VersioningEvaluationModule extends AbstractEvaluationModule {
 
 		// if the result size is larger than 50K triples only compare result sizes.
 		// if not compare the results themselves
-		boolean resultSetsEqual = (expected.size() == received.size() && expected.size() > 50000) ? expected.size() == received.size() : ResultSetCompare.equalsByValue(expected, received);
+		boolean resultSetsEqual;
+		boolean resultSetsCompared;
+		if(expected.size() > 50000) {
+			resultSetsEqual = expected.size() == received.size();
+			resultSetsCompared = false;
+		} else {
+			resultSetsEqual = ResultSetCompare.equalsByValue(expected, received);
+			resultSetsCompared = true;
+		}
+//		boolean resultSetsEqual = (expected.size() == received.size() && expected.size() > 50000) ? expected.size() == received.size() : ResultSetCompare.equalsByValue(expected, received);
 		
 		switch (queryType) {
 			case 2:	
@@ -170,7 +179,10 @@ public class VersioningEvaluationModule extends AbstractEvaluationModule {
 				}
 				break;
 		}
-		LOGGER.info((resultSetsEqual ? "[SUCCESS]" : "[FAIL]") + " - Task type: " + queryType + "." + querySubType + "." + querySustitutionParam + " executed in " + (responseReceivedTimestamp - taskSentTimestamp) + " ms and returned " + received.size() + "/" + expected.size() + " results.");
+		LOGGER.info((resultSetsEqual ? "[SUCCESS]" : "[FAIL]") + 
+				" - Task type: " + queryType + "." + querySubType + "." + querySustitutionParam + 
+				" executed in " + (responseReceivedTimestamp - taskSentTimestamp) + " ms and returned " + 
+				received.size() + "/" + expected.size() + " results" + (resultSetsCompared ? " (RS compared)." : "."));
 	}
 	
 	private void computeTotalFailures() {
